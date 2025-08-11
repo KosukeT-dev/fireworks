@@ -17,16 +17,16 @@
     }
     header {
         text-align: center;
-        padding: 10px;
+        padding: 0.5rem;
         text-shadow: 0 0 10px cyan;
         position: relative;
     }
     #langToggle {
         position: absolute;
-        top: 10px;
-        right: 10px;
-        padding: 5px 12px;
-        font-size: 0.9em;
+        top: 8px;
+        right: 8px;
+        padding: 0.3rem 0.7rem;
+        font-size: clamp(0.7rem, 2vw, 0.9rem);
         background: rgba(0,0,0,0.4);
         border: 1px solid cyan;
         color: white;
@@ -46,18 +46,19 @@
         background: transparent;
     }
     #controls {
-        padding: 8px;
+        padding: 0.5rem;
         background: rgba(0,0,30,0.6);
         backdrop-filter: blur(5px);
+        border-top: 2px solid cyan;
         display: flex;
         justify-content: center;
         align-items: center;
-        gap: 10px;
+        gap: 0.5rem;
         flex-wrap: wrap;
     }
     #launchBtn {
-        padding: 8px 16px;
-        font-size: 1.05em;
+        padding: clamp(0.4rem, 2vw, 0.6rem) clamp(0.8rem, 4vw, 1.2rem);
+        font-size: clamp(0.9rem, 2.5vw, 1.2rem);
         background: linear-gradient(90deg, #ff00ff, #00ffff);
         border: none;
         color: white;
@@ -65,22 +66,27 @@
         border-radius: 30px;
         box-shadow: 0 0 10px cyan;
         transition: transform 0.2s;
-        min-width: 90px;
+        min-width: 80px;
     }
     #launchBtn:hover {
         transform: scale(1.08);
     }
     #counter {
-        font-size: 1em;
+        font-size: clamp(0.8rem, 2.5vw, 1.1rem);
         text-shadow: 0 0 5px yellow;
-        min-width: 70px;
+        min-width: 65px;
         text-align: center;
+    }
+    @media (max-width: 480px) {
+        #controls {
+            flex-direction: column;
+        }
     }
 </style>
 </head>
 <body>
 <header>
-    <h1 id="title">花火打ち上げゲーム</h1>
+    <h1 id="title" style="font-size: clamp(1.2rem, 5vw, 2rem); margin: 0;">花火打ち上げゲーム</h1>
     <button id="langToggle">English</button>
 </header>
 <canvas id="canvas"></canvas>
@@ -97,50 +103,45 @@
 <script>
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-const launchBtn = document.getElementById('launchBtn');
-const counterEl = document.getElementById('counter');
-const langToggleBtn = document.getElementById('langToggle');
 
 function resizeCanvas() {
-    const headerHeight = document.querySelector('h1').offsetHeight;
-    const controlsHeight = document.getElementById('controls').offsetHeight;
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight - headerHeight - controlsHeight;
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
-let launches = 0;
-let fireworks = [];
-let rockets = [];
-
+// 言語切替
 let currentLang = 'ja';
 const texts = {
     ja: {
-        title: '花火打ち上げゲーム',
-        launch: '発射',
-        count: (n) => `回数: ${n}`,
-        toggle: 'English'
+        title: "花火打ち上げゲーム",
+        launch: "発射",
+        count: (n) => `${n} 回`,
+        toggle: "English"
     },
     en: {
-        title: 'Fireworks Launch Game',
-        launch: 'Launch',
-        count: (n) => `Count: ${n}`,
-        toggle: '日本語'
+        title: "Fireworks",
+        launch: "Launch",
+        count: (n) => `${n} times`,
+        toggle: "日本語"
     }
 };
-
 function updateLanguage() {
-    document.querySelector('h1').textContent = texts[currentLang].title;
-    launchBtn.textContent = texts[currentLang].launch;
-    counterEl.textContent = texts[currentLang].count(launches);
-    langToggleBtn.textContent = texts[currentLang].toggle;
+    document.getElementById('title').textContent = texts[currentLang].title;
+    document.getElementById('launchBtn').textContent = texts[currentLang].launch;
+    document.getElementById('counter').textContent = texts[currentLang].count(launches);
+    document.getElementById('langToggle').textContent = texts[currentLang].toggle;
 }
-
-langToggleBtn.addEventListener('click', () => {
+document.getElementById('langToggle').addEventListener('click', () => {
     currentLang = currentLang === 'ja' ? 'en' : 'ja';
     updateLanguage();
 });
+
+// 花火ロジック
+let launches = 0;
+let fireworks = [];
+let rockets = [];
 
 class Rocket {
     constructor(x, targetY, color, isGrand) {
@@ -203,16 +204,9 @@ class Particle {
     }
 }
 
-launchBtn.addEventListener('click', () => {
-    // 初回クリック時にフルスクリーン化
-    if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(err => {
-            console.warn("Fullscreen failed:", err);
-        });
-    }
-
+document.getElementById('launchBtn').addEventListener('click', () => {
     launches++;
-    counterEl.textContent = texts[currentLang].count(launches);
+    document.getElementById('counter').textContent = texts[currentLang].count(launches);
     let isGrand = launches % 30 === 0;
     let color = isGrand ? 'white' : `hsl(${Math.random()*360},100%,50%)`;
     rockets.push(new Rocket(Math.random() * canvas.width, Math.random() * canvas.height / 2 + 50, color, isGrand));
@@ -229,9 +223,9 @@ function animate() {
     });
     requestAnimationFrame(animate);
 }
+animate();
 
 updateLanguage();
-animate();
 </script>
 </body>
 </html>
