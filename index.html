@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>花火打ち上げゲーム / Fireworks</title>
+<style>
+    body {
+        margin: 0;
+        background: radial-gradient(circle at center, #000010, #020024 80%);
+        color: white;
+        font-family: 'Segoe UI', sans-serif;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
+    }
+    header {
+        text-align: center;
+        padding: 10px;
+        text-shadow: 0 0 10px cyan;
+        position: relative;
+    }
+    #langToggle {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        padding: 5px 12px;
+        font-size: 0.9em;
+        background: rgba(0,0,0,0.4);
+        border: 1px solid cyan;
+        color: white;
+        cursor: pointer;
+        border-radius: 15px;
+        opacity: 0.7;
+        transition: opacity 0.2s;
+    }
+    #langToggle:hover {
+        opacity: 1;
+    }
+    #canvas {
+        flex: 1;
+        display: block;
+        width: 100%;
+        height: 100%;
+        background: transparent;
+    }
+    #controls {
+        padding: 8px;
+        background: rgba(0,0,30,0.6);
+        backdrop-filter: blur(5px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    #launchBtn {
+        padding: 8px 16px;
+        font-size: 1.05em;
+        background: linear-gradient(90deg, #ff00ff, #00ffff);
+        border: none;
+        color: white;
+        cursor: pointer;
+        border-radius: 30px;
+        box-shadow: 0 0 10px cyan;
+        transition: transform 0.2s;
+        min-width: 90px;
+    }
+    #launchBtn:hover {
+        transform: scale(1.08);
+    }
+    #counter {
+        font-size: 1em;
+        text-shadow: 0 0 5px yellow;
+        min-width: 70px;
+        text-align: center;
+    }
+</style>
+</head>
+<body>
+<header>
+    <h1 id="title">花火打ち上げゲーム</h1>
+    <button id="langToggle">English</button>
+</header>
+<canvas id="canvas"></canvas>
+<div id="controls">
+    <button id="launchBtn">発射</button>
+    <div id="counter">0 回</div>
+</div>
+
+<!--
+<audio id="launchSound" src="audios/launch.mp3" preload="auto"></audio>
+<audio id="explodeSound" src="audios/explode.mp3" preload="auto"></audio>
+-->
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+function resizeCanvas() {
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+// 言語切替
+let currentLang = 'ja';
+const texts = {
+    ja: {
+        title: "花火打ち上げゲーム",
+        launch: "発射",
+        count: (n) => `${n} 回`,
+        toggle: "English"
+    },
+    en: {
+        title: "Fireworks",
+        launch: "Launch",
+        count: (n) => `${n} times`,
+        toggle: "日本語"
+    }
+};
+function updateLanguage() {
+    document.getElementById('title').textContent = texts[currentLang].title;
+    document.getElementById('launchBtn').textContent = texts[currentLang].launch;
+    document.getElementById('counter').textContent = texts[currentLang].count(launches);
+    document.getElementById('langToggle').textContent = texts[currentLang].toggle;
+}
+document.getElementById('langToggle').addEventListener('click', () => {
+    currentLang = currentLang === 'ja' ? 'en' : 'ja';
+    updateLanguage();
+});
+
+// 花火ロジック
+let launches = 0;
+let fireworks = [];
+let rockets = [];
+
+class Rocket {
+    constructor(x, targetY, color, isGrand) {
+        this.x = x;
+        this.y = canvas.height;
+        this.targetY = targetY;
+        this.color = color;
+        this.speed = 5;
+        this.isGrand = isGrand;
+    }
+    update() {
+        this.y -= this.speed;
+        if (this.y <= this.targetY) {
+            this.explode();
+            rockets.splice(rockets.indexOf(this), 1);
+        }
+    }
+    draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, 5, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = this.color;
+    }
+    explode() {
+        // document.getElementById('explodeSound')?.play();
+        let count = this.isGrand ? 150 : 50;
+        for (let i = 0; i < count; i++) {
+            let angle = Math.random() * 2 * Math.PI;
+            let speed = Math.random() * (this.isGrand ? 6 : 3) + 1;
+            fireworks.push(new Particle(this.x, this.y, speed, angle, this.color));
+        }
+    }
+}
+
+class Particle {
+    constructor(x, y, speed, angle, color) {
+        this.x = x;
+        this.y = y;
+        this.speed = speed;
+        this.angle = angle;
+        this.color = color;
+        this.alpha = 1;
+        this.decay = Math.random() * 0.015 + 0.015;
+    }
+    update() {
+        this.x += Math.cos(this.angle) * this.speed;
+        this.y += Math.sin(this.angle) * this.speed;
+        this.speed *= 0.98;
+        this.alpha -= this.decay;
+    }
+    draw() {
+        ctx.globalAlpha = this.alpha;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+    }
+}
+
+document.getElementById('launchBtn').addEventListener('click', () => {
+    launches++;
+    document.getElementById('counter').textContent = texts[currentLang].count(launches);
+    let isGrand = launches % 30 === 0;
+    let color = isGrand ? 'white' : `hsl(${Math.random()*360},100%,50%)`;
+    rockets.push(new Rocket(Math.random() * canvas.width, Math.random() * canvas.height / 2 + 50, color, isGrand));
+    // document.getElementById('launchSound')?.play();
+});
+
+function animate() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    rockets.forEach(r => { r.update(); r.draw(); });
+    fireworks.forEach((p, i) => {
+        p.update();
+        p.draw();
+        if (p.alpha <= 0) fireworks.splice(i, 1);
+    });
+    requestAnimationFrame(animate);
+}
+animate();
+
+// 初期言語設定
+updateLanguage();
+</script>
+</body>
+</html>
